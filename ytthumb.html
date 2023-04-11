@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Top 11 Viewed YouTube Videos</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<meta name="keywords" content="" id="meta-keywords">
+	<script>
+		$(document).ready(function() {
+			$("#add-video-form").submit(function(event) {
+				event.preventDefault();
+				var videoUrl = $("#video-url").val();
+				var videoId = getVideoId(videoUrl);
+				if (videoId) {
+					getVideoThumbnail(videoId, function(thumbnailUrl) {
+						$.ajax({
+							url: "https://www.googleapis.com/youtube/v3/videos",
+							type: "GET",
+							dataType: "json",
+							data: {
+								part: "snippet",
+								id: videoId,
+								key: "AIzaSyDjpJ1CnhGTQ7vDGAQ7H3-hxlimJUrqXlA"
+							},
+							success: function(result) {
+								var videoTitle = result.items[0].snippet.title;
+								var html = "<div class='video'><a href='" + videoUrl + "' target='_blank'><img src='" + thumbnailUrl + "' alt='" + videoTitle + "'><div class='overlay'><p>" + videoTitle + "</p></div></a></div>";
+								// append the custom video to a random position within the trending videos
+								var randomIndex = Math.floor(Math.random() * 11);
+								$("#videos").children().eq(randomIndex).before(html);
+								$("#video-url").val("");
+							}
+						});
+					});
+				} else {
+					alert("Invalid YouTube video URL");
+				}
+			});
+
+			$("#search-form").submit(function(event) {
+				event.preventDefault();
+				var searchQuery = $("#search-query").val();
+				$.ajax({
+					url: "https://www.googleapis.com/youtube/v3/search",
+					type: "GET",
+					dataType: "json",
+					data: {
+						part: "snippet",
+						q: searchQuery,
+						type: "video",
+						maxResults: "11",
+						key: "AIzaSyDjpJ1CnhGTQ7vDGAQ7H3-hxlimJUrqXlA"
+					},
+					success: function(result) {
+						$("#videos").empty();
+						var metaKeywords = "";
+						for (var i = 0; i < result.items.length; i++) {
+							var videoId = result.items[i].id.videoId;
+							var videoTitle = result.items[i].snippet.title;
+							var videoThumbnail = result.items[i].snippet.thumbnails.medium.url;
+							var videoLink = "https://www.youtube.com/watch?v=" + videoId;
+							var html = "<div class='video'><a href='" + videoLink + "' target='_blank'><img src='" + videoThumbnail + "' alt='" + videoTitle + "'><div class='overlay'><p>" + videoTitle + "</p></div></a></div>";
+							$("#videos").append(html);
+							var tags = result.items[i].snippet.tags;
+							if (tags) {
+								metaKeywords += tags.join(",") + ",";
+							}
+						}
+						$("#meta-keywords").attr("content", metaKeywords.slice(0, -1));
+					}
+				});
+			});
+
+			$.ajax({
+				url: "https://www.googleapis.com/youtube/v3/search",
+				type: "GET",
+				dataType: "json",
+				data: {
+					part: "snippet",
+					q: "YOUR_SEARCH_QUERY",
+					type: "video",
+					maxResults: "11",
+					key: "AIzaSyDjpJ1CnhGTQ7vDGAQ7H3-hxlimJUrqXlA"
+				},
+				success: function(result) {
+					for (var i = 0; i < result.items.length; i++) {
+						var videoId = result.items[i].id.videoId;
+						var videoTitle = result.items[i].snippet.title;
+						var videoThumbnail = result.items[i].snippet.thumbnails.medium.url;
+						var videoLink = "https://www.youtube.com/watch?v=" + videoId;
+						var html = "<div class='video'><a href='" + videoLink + "' target='_blank'><img src='" + videoThumbnail + "' alt='" + videoTitle + "'><div class='overlay'><p>" + videoTitle + "</p></div></a></div>";
+						$("#videos").append(html);
+					}
+				}
+			});
+		});
+
+		function getVideoId(url) {
+			var match = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
+			if (match) {
+				return match[1];
+			}
+			return null;
+		}
+
+		function getVideoThumbnail(videoId, callback) {
+			$.ajax({
+				url: "https://www.googleapis.com/youtube/v3/videos",
+				type: "GET",
+				dataType: "json",
+				data: {
+					part: "snippet",
+					id: videoId,
+					key: "AIzaSyDjpJ1CnhGTQ7vDGAQ7H3-hxlimJUrqXlA"
+				},
+				success: function(result) {
+					var thumbnailUrl = result.items[0].snippet.thumbnails.medium.url;
+					callback(thumbnailUrl);
+				}
+			});
+		}
+	</script>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: #f2f2f2;
+			font-family: Arial, sans-serif;
+		}
+
+		h1 {
+			text-align: center;
+			margin-top: 50px;
+			font-size: 36px;
+			font-weight: bold;
+			color: #333;
+		}
+
+		#videos {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			margin-top: 20px;
+			margin-bottom: 50px;
+		}
+
+		.video {
+			margin: 20px;
+			position: relative;
+			width: 300px;
+			height: 200px;
+		}
+
+		.video img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			cursor: pointer;
+		}
+
+		.overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.5);
+			opacity: 0;
+			transition: opacity 0.3s ease-in-out;
+		}
+
+		.overlay p {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			color: white;
+			font-size: 20px;
+			font-weight: bold;
+			text-align: center;
+			opacity: 1;
+			transition: opacity 0.3s ease-in-out;
+		}
+
+		.video:hover .overlay {
+			opacity: 1;
+		}
+
+		.video:hover .overlay p {
+			opacity: 0.8;
+		}
+
+		form {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin: 20px 0 0 0;
+		}
+
+		input[type="text"] {
+			padding: 10px;
+			font-size: 16px;
+			border-radius: 5px;
+			border: none;
+			margin-right: 10px;
+		}
+
+		input[type="submit"] {
+			padding: 10px 20px;
+			background-color: #333;
+			color: white;
+			border-radius: 5px;
+			border: none;
+			font-size: 16px;
+			cursor: pointer;
+		}
+
+		input[type="submit"]:hover {
+			background-color: #555;
+		}
+
+		#meta-keywords {
+			margin-top: 20px;
+			text-align: center;
+			font-weight: bold;
+		}
+
+	</style>
+</head>
+<body>
+	<h1>Top 11 Viewed YouTube Videos</h1>
+	<form id="search-form" style="text-align: center;">
+		<input type="text" id="search-query" placeholder="Enter search query">
+		<input type="submit" value="Search">
+	</form>
+	<form id="add-video-form" style="text-align: center;">
+		<input type="text" id="video-url" placeholder="Enter YouTube video link">
+		<input type="submit" value="Add Video">
+	</form>
+	<div id="videos"></div>
+	<meta name="keywords" content="" id="meta-keywords">
+</body>
+</html>
